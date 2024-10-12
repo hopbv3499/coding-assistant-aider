@@ -1,4 +1,5 @@
 fastapi
 uvicorn
 aider-chat
+python-dotenv
 pytest

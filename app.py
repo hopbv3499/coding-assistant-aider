@@ -3,33 +3,37 @@ from pydantic import BaseModel
 
 from aidercoder import AIDERCoder
 
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from utils import parse_udiff, get_diff
 
 app = FastAPI()
 
 coder = AIDERCoder(
-    model_name="openai/o1-mini-2024-09-12",
+    model_name="openai/o1-preview-2024-09-12",
     auto_commits=False,
-    edit_format="diff"
+    edit_format="udiff",
+    repo_path=os.environ["REPO_PATH"]
 )
 
 class UpdateRequest(BaseModel):
-    repo_path: str
     fnames: list
 
 class EditRequest(BaseModel):
-    repo_path: str
     text_request: str
 
 @app.post("/update")
 async def update_aidercoder(request: UpdateRequest):
-    repo_path = request.repo_path
     fnames = request.fnames
     try:
-        coder.update_repo(repo_path=repo_path, fnames=fnames)
+        coder.update_repo(fnames=fnames)
         return {
             "status": "success",
-            "message": f"AIDERCoder updated for repository at {repo_path}"
+            "message": f"AIDERCoder updated for repository with files: {fnames}"
         }
     except Exception as e:
         return {
