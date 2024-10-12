@@ -12,7 +12,6 @@ def parse_diff(diff_text):
     for line in diff_text.splitlines():
         # Detect filename
         match_filename = re.match(r'^([\w\/\.]+)$', line.replace("**", ""))
-        print("Check match_filename", match_filename)
         if match_filename:
             if current_file and current_changes:
                 # Save previous file's changes
