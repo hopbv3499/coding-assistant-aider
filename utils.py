@@ -48,10 +48,11 @@ def parse_diff(diff_text):
         # Detect the end of replace block
         if is_in_replace and line.startswith("```"):
             # Save the change
-            current_changes.append({
-                "search": "\n".join(search_buffer).strip(),
-                "replace": "\n".join(replace_buffer).strip()
-            })
+            if search_buffer and replace_buffer:
+                current_changes.append({
+                    "search": "\n".join(search_buffer).strip(),
+                    "replace": "\n".join(replace_buffer).strip()
+                })
             search_buffer = []
             replace_buffer = []
             is_in_replace = False
