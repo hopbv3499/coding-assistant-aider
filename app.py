@@ -9,14 +9,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from utils import parse_udiff, get_diff
+from utils import parse_diff
 
 app = FastAPI()
 
 coder = AIDERCoder(
     model_name="openai/o1-preview-2024-09-12",
     auto_commits=False,
-    edit_format="udiff",
+    edit_format="diff",
     repo_path=os.environ["REPO_PATH"]
 )
 
@@ -45,8 +45,7 @@ async def update_aidercoder(request: UpdateRequest):
 async def edit_code(request: EditRequest):
     try:
         message = coder.run(request.text_request)
-        diff = get_diff(message)
-        changes = parse_udiff(diff)
+        changes = parse_diff(message)
         return {
             "status": "success",
             "message": message,

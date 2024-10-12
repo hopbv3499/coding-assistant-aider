@@ -10,13 +10,13 @@ class AIDERCoder():
             self, 
             model_name="openai/o1-mini-2024-09-12",
             auto_commits=False,
-            edit_format="udiff",
+            edit_format="diff",
             fnames=[],
             repo_path=None
         ):
         self.fnames = fnames
         self.main_model = Model(model_name)
-        self.io = InputOutput(yes=True)
+        self.io = InputOutput(yes=True, input="inp.txt", output="out.txt")
         self.repo = GitRepo(
             io=self.io,
             fnames=[],

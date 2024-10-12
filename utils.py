@@ -1,30 +1,74 @@
-def get_diff(message: str) -> str:
-    return message.split("```diff")[1].split("```")[0].strip()
+import re
 
-def parse_udiff(udiff):
-    changes = {}
+def parse_diff(diff_text):
+    files_changes = []
     current_file = None
+    current_changes = None
+    search_buffer = []
+    replace_buffer = []
+    is_in_search = False
+    is_in_replace = False
 
-    for line in udiff.splitlines():
-        if line.startswith('--- '):
-            # Get the old file name
-            current_file = line[4:].strip()  # Remove the '--- ' prefix
-            changes[current_file] = []  # Initialize a list for changes
-        elif line.startswith('+++ '):
-            # Get the new file name
-            new_file = line[4:].strip()  # Remove the '+++ ' prefix
-            if current_file:
-                changes[current_file].append({'new_file': new_file, 'changes': []})
-        elif line.startswith('@@'):
-            # This marks the start of a chunk of changes
+    for line in diff_text.splitlines():
+        # Detect filename
+        match_filename = re.match(r'^([\w\/\.]+)$', line.replace("**", ""))
+        print("Check match_filename", match_filename)
+        if match_filename:
+            if current_file and current_changes:
+                # Save previous file's changes
+                files_changes.append({
+                    "filename": current_file,
+                    "changes": current_changes
+                })
+            # Start a new file
+            current_file = match_filename.group(1).replace("*", "")
+            print("Current file", current_file)
+            current_changes = []
+            search_buffer = []
+            replace_buffer = []
+            is_in_search = False
+            is_in_replace = False
             continue
-        elif line.startswith('-'):
-            # This line was removed
-            if current_file and changes[current_file]:
-                changes[current_file][-1]['changes'].append({'removed': line[1:].strip()})
-        elif line.startswith('+'):
-            # This line was added
-            if current_file and changes[current_file]:
-                changes[current_file][-1]['changes'].append({'added': line[1:].strip()})
 
-    return changes
+        # Detect search block start
+        if line.startswith("<<<<<<< SEARCH"):
+            is_in_search = True
+            search_buffer = []
+            continue
+        
+        if line.startswith("======="):
+            is_in_search = False
+            is_in_replace = True
+            replace_buffer = []
+            continue
+        
+        if line.startswith(">>>>>>> REPLACE"):
+            is_in_replace = True
+            continue
+
+        # Detect the end of replace block
+        if is_in_replace and line.startswith("```"):
+            # Save the change
+            current_changes.append({
+                "search": "\n".join(search_buffer).strip(),
+                "replace": "\n".join(replace_buffer).strip()
+            })
+            search_buffer = []
+            replace_buffer = []
+            is_in_replace = False
+            continue
+
+        # Collect lines for the current search/replace block
+        if is_in_search:
+            search_buffer.append(line)
+        elif is_in_replace:
+            replace_buffer.append(line)
+
+    # Save the last file's changes if any
+    if current_file and current_changes:
+        files_changes.append({
+            "filename": current_file,
+            "changes": current_changes
+        })
+
+    return files_changes
